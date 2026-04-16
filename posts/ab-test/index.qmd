@@ -1,0 +1,160 @@
+---
+title: "What an A/B Test Teaches Us About Frequentist Statistics"
+author: Yangzi He
+date: "2026-04-15"
+format:
+  html:
+    toc: true
+execute:
+  echo: true
+---
+
+## Introduction
+
+Small changes in wording can meaningfully affect user behavior. Suppose I run a website with a newsletter sign-up form on the homepage. I want to test whether one call-to-action (CTA) message leads to more users subscribing than another.
+
+To answer this question, I run an A/B test. Visitors are randomly assigned to one of two versions of the CTA, and I compare the proportion of users who sign up in each group.
+
+In this post, I use simulation to connect this simple experiment to key ideas in classical frequentist statistics: estimation, the law of large numbers, bootstrap uncertainty, the central limit theorem, hypothesis testing, regression, and the dangers of repeatedly checking results.
+
+---
+
+## The A/B Test as a Statistical Problem
+
+Each user either signs up or does not sign up, so each observation can be modeled as a Bernoulli random variable.
+
+Let $\pi_A$ and $\pi_B$ denote the true sign-up probabilities for versions A and B. The quantity of interest is the difference in conversion rates:
+
+$$
+\theta = \pi_A - \pi_B
+$$
+
+A natural estimator is the difference in sample means:
+
+$$
+\hat{\theta} = \bar{X}_A - \bar{X}_B
+$$
+
+Because the outcome is binary, each sample mean is simply the observed sign-up rate in that group.
+
+---
+
+## Simulating Data
+
+To study how this estimator behaves, I simulate data where the truth is known. I assume version A has a sign-up probability of 0.22 and version B has a sign-up probability of 0.18, so the true treatment effect is 0.04.
+
+```{r}
+set.seed(123)
+
+n <- 1000
+A <- rbinom(n, 1, 0.22)
+B <- rbinom(n, 1, 0.18)
+
+theta_hat <- mean(A) - mean(B)
+theta_hat
+``` 
+The simulated estimate is close to the true difference, but not exactly equal to it. That gap is the natural sampling variation that frequentist methods are designed to quantify.
+
+## The Law of Large Numbers
+The Law of Large Numbers says that sample averages tend to get closer to their true values as the sample size grows. To illustrate this idea, I compute the running average of the difference between the two groups.
+```{r}
+diffs <- A - B
+running_mean <- cumsum(diffs) / (1:n)
+
+plot(
+  running_mean,
+  type = "l",
+  main = "Running Estimate of Treatment Effect",
+  xlab = "Sample Size",
+  ylab = "Estimate"
+)
+abline(h = 0.04, col = "red", lwd = 2)
+``` 
+At small sample sizes, the estimate fluctuates substantially. As more observations accumulate, the running average stabilizes and moves closer to the true effect of 0.04. This is exactly what the Law of Large Numbers predicts.
+
+## Bootstrap Standard Errors
+
+A point estimate tells us the estimated effect, but not how uncertain that estimate is. To measure uncertainty, I use the bootstrap.
+
+The bootstrap works by repeatedly resampling from the observed data with replacement, recomputing the estimator each time, and then measuring how much those resampled estimates vary.
+```{r}
+boot_estimates <- replicate(1000, {
+  A_star <- sample(A, replace = TRUE)
+  B_star <- sample(B, replace = TRUE)
+  mean(A_star) - mean(B_star)
+})
+
+boot_se <- sd(boot_estimates)
+boot_se
+``` 
+The bootstrap standard error summarizes the sampling variability of $\hat{\theta}$. A larger standard error would mean that the estimated difference changes a lot from sample to sample, while a smaller standard error suggests a more stable estimate.
+
+## The Central Limit Theorem
+Even though the underlying outcomes are binary, the Central Limit Theorem implies that the sampling distribution of the estimator becomes approximately normal when the sample size is large enough.
+
+To illustrate this, I repeatedly simulate new A/B tests and compute the estimate each time.
+```{r}
+sim_estimates <- replicate(1000, {
+  A_s <- rbinom(100, 1, 0.22)
+  B_s <- rbinom(100, 1, 0.18)
+  mean(A_s) - mean(B_s)
+})
+
+hist(
+  sim_estimates,
+  main = "Sampling Distribution of the Estimated Effect",
+  xlab = "Estimate"
+)
+``` 
+The resulting histogram is approximately bell-shaped. This matters because much of frequentist inference relies on large-sample normal approximations for estimators like $\hat{\theta}$.
+
+## Hypothesis Testing
+$$
+H_0: \theta = 0
+$$
+```{r}
+se <- sqrt(var(A)/n + var(B)/n)
+z <- theta_hat / se
+2 * (1 - pnorm(abs(z)))
+``` 
+A small p-value would provide evidence against the null hypothesis. In this example, the p-value is low enough to suggest that the difference in sign-up rates is unlikely to be explained by random chance alone.
+
+Although people often refer to this kind of comparison as a "t-test," the logic here is closer to a large-sample z-test because the normal approximation comes from the Central Limit Theorem.
+
+
+The T-Test as a Regression
+
+$$
+Y_i = \beta_0 + \beta_1 D_i + \varepsilon_i
+$$
+```{r}
+Y <- c(A, B)
+D <- c(rep(1, n), rep(0, n))
+summary(lm(Y ~ D))
+``` 
+In this setup, the coefficient on $D_i$ is exactly the difference in means between the two groups. This equivalence is useful because regression provides a flexible framework for extending simple A/B tests to more complicated settings with additional covariates or interactions.
+
+
+## The Problem with Peeking
+```{r}
+false_positive <- replicate(1000, {
+  A <- rbinom(1000, 1, 0.2)
+  B <- rbinom(1000, 1, 0.2)
+
+  any(sapply(seq(100, 1000, 100), function(k) {
+    z <- (mean(A[1:k]) - mean(B[1:k])) /
+         sqrt(var(A[1:k])/k + var(B[1:k])/k)
+    p <- 2 * (1 - pnorm(abs(z)))
+    p < 0.05
+  }))
+})
+
+mean(false_positive)
+``` 
+This value estimates the probability of seeing at least one "significant" result when there is actually no true effect. Because the test is repeated many times, the overall false positive rate becomes much larger than 0.05. This is why experimenters should avoid repeatedly checking results without adjustment.
+
+## Conclusion
+
+This A/B testing example shows how classical frequentist tools are used in practice. The difference in sample means gives a natural estimator, the Law of Large Numbers explains why estimates stabilize, the bootstrap helps quantify uncertainty, the Central Limit Theorem supports large-sample inference, and hypothesis testing provides a formal way to assess evidence.
+
+At the same time, the peeking example highlights an important practical lesson: good statistical conclusions depend not only on the method used, but also on disciplined experimental design.

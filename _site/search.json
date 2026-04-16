@@ -1,0 +1,100 @@
+[
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "About this site"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "my-website",
+    "section": "",
+    "text": "This is a Quarto website.\nTo learn more about Quarto websites visit https://quarto.org/docs/websites."
+  },
+  {
+    "objectID": "posts.html",
+    "href": "posts.html",
+    "title": "Blog",
+    "section": "",
+    "text": "What an A/B Test Teaches Us About Frequentist Statistics\n\n\n\n\n\n\nYangzi He\n\n\nApr 15, 2026\n\n\n\n\n\n\nNo matching items"
+  },
+  {
+    "objectID": "posts/ab-test/index.html",
+    "href": "posts/ab-test/index.html",
+    "title": "What an A/B Test Teaches Us About Frequentist Statistics",
+    "section": "",
+    "text": "Small changes in wording can meaningfully affect user behavior. Suppose I run a website with a newsletter sign-up form on the homepage. I want to test whether one call-to-action (CTA) message leads to more users subscribing than another.\nTo answer this question, I run an A/B test. Visitors are randomly assigned to one of two versions of the CTA, and I compare the proportion of users who sign up in each group.\nIn this post, I use simulation to connect this simple experiment to key ideas in classical frequentist statistics: estimation, the law of large numbers, bootstrap uncertainty, the central limit theorem, hypothesis testing, regression, and the dangers of repeatedly checking results."
+  },
+  {
+    "objectID": "posts/ab-test/index.html#introduction",
+    "href": "posts/ab-test/index.html#introduction",
+    "title": "What an A/B Test Teaches Us About Frequentist Statistics",
+    "section": "",
+    "text": "Small changes in wording can meaningfully affect user behavior. Suppose I run a website with a newsletter sign-up form on the homepage. I want to test whether one call-to-action (CTA) message leads to more users subscribing than another.\nTo answer this question, I run an A/B test. Visitors are randomly assigned to one of two versions of the CTA, and I compare the proportion of users who sign up in each group.\nIn this post, I use simulation to connect this simple experiment to key ideas in classical frequentist statistics: estimation, the law of large numbers, bootstrap uncertainty, the central limit theorem, hypothesis testing, regression, and the dangers of repeatedly checking results."
+  },
+  {
+    "objectID": "posts/ab-test/index.html#the-ab-test-as-a-statistical-problem",
+    "href": "posts/ab-test/index.html#the-ab-test-as-a-statistical-problem",
+    "title": "What an A/B Test Teaches Us About Frequentist Statistics",
+    "section": "The A/B Test as a Statistical Problem",
+    "text": "The A/B Test as a Statistical Problem\nEach user either signs up or does not sign up, so each observation can be modeled as a Bernoulli random variable.\nLet \\(\\pi_A\\) and \\(\\pi_B\\) denote the true sign-up probabilities for versions A and B. The quantity of interest is the difference in conversion rates:\n\\[\n\\theta = \\pi_A - \\pi_B\n\\]\nA natural estimator is the difference in sample means:\n\\[\n\\hat{\\theta} = \\bar{X}_A - \\bar{X}_B\n\\]\nBecause the outcome is binary, each sample mean is simply the observed sign-up rate in that group."
+  },
+  {
+    "objectID": "posts/ab-test/index.html#simulating-data",
+    "href": "posts/ab-test/index.html#simulating-data",
+    "title": "What an A/B Test Teaches Us About Frequentist Statistics",
+    "section": "Simulating Data",
+    "text": "Simulating Data\nTo study how this estimator behaves, I simulate data where the truth is known. I assume version A has a sign-up probability of 0.22 and version B has a sign-up probability of 0.18, so the true treatment effect is 0.04.\n\nset.seed(123)\n\nn &lt;- 1000\nA &lt;- rbinom(n, 1, 0.22)\nB &lt;- rbinom(n, 1, 0.18)\n\ntheta_hat &lt;- mean(A) - mean(B)\ntheta_hat\n\n[1] 0.046\n\n\nThe simulated estimate is close to the true difference, but not exactly equal to it. That gap is the natural sampling variation that frequentist methods are designed to quantify."
+  },
+  {
+    "objectID": "posts/ab-test/index.html#the-law-of-large-numbers",
+    "href": "posts/ab-test/index.html#the-law-of-large-numbers",
+    "title": "What an A/B Test Teaches Us About Frequentist Statistics",
+    "section": "The Law of Large Numbers",
+    "text": "The Law of Large Numbers\nThe Law of Large Numbers says that sample averages tend to get closer to their true values as the sample size grows. To illustrate this idea, I compute the running average of the difference between the two groups.\n\ndiffs &lt;- A - B\nrunning_mean &lt;- cumsum(diffs) / (1:n)\n\nplot(\n  running_mean,\n  type = \"l\",\n  main = \"Running Estimate of Treatment Effect\",\n  xlab = \"Sample Size\",\n  ylab = \"Estimate\"\n)\nabline(h = 0.04, col = \"red\", lwd = 2)\n\n\n\n\n\n\n\n\nAt small sample sizes, the estimate fluctuates substantially. As more observations accumulate, the running average stabilizes and moves closer to the true effect of 0.04. This is exactly what the Law of Large Numbers predicts."
+  },
+  {
+    "objectID": "posts/ab-test/index.html#bootstrap-standard-errors",
+    "href": "posts/ab-test/index.html#bootstrap-standard-errors",
+    "title": "What an A/B Test Teaches Us About Frequentist Statistics",
+    "section": "Bootstrap Standard Errors",
+    "text": "Bootstrap Standard Errors\nA point estimate tells us the estimated effect, but not how uncertain that estimate is. To measure uncertainty, I use the bootstrap.\nThe bootstrap works by repeatedly resampling from the observed data with replacement, recomputing the estimator each time, and then measuring how much those resampled estimates vary.\n\nboot_estimates &lt;- replicate(1000, {\n  A_star &lt;- sample(A, replace = TRUE)\n  B_star &lt;- sample(B, replace = TRUE)\n  mean(A_star) - mean(B_star)\n})\n\nboot_se &lt;- sd(boot_estimates)\nboot_se\n\n[1] 0.01668652\n\n\nThe bootstrap standard error summarizes the sampling variability of \\(\\hat{\\theta}\\). A larger standard error would mean that the estimated difference changes a lot from sample to sample, while a smaller standard error suggests a more stable estimate."
+  },
+  {
+    "objectID": "posts/ab-test/index.html#the-central-limit-theorem",
+    "href": "posts/ab-test/index.html#the-central-limit-theorem",
+    "title": "What an A/B Test Teaches Us About Frequentist Statistics",
+    "section": "The Central Limit Theorem",
+    "text": "The Central Limit Theorem\nEven though the underlying outcomes are binary, the Central Limit Theorem implies that the sampling distribution of the estimator becomes approximately normal when the sample size is large enough.\nTo illustrate this, I repeatedly simulate new A/B tests and compute the estimate each time.\n\nsim_estimates &lt;- replicate(1000, {\n  A_s &lt;- rbinom(100, 1, 0.22)\n  B_s &lt;- rbinom(100, 1, 0.18)\n  mean(A_s) - mean(B_s)\n})\n\nhist(\n  sim_estimates,\n  main = \"Sampling Distribution of the Estimated Effect\",\n  xlab = \"Estimate\"\n)\n\n\n\n\n\n\n\n\nThe resulting histogram is approximately bell-shaped. This matters because much of frequentist inference relies on large-sample normal approximations for estimators like \\(\\hat{\\theta}\\)."
+  },
+  {
+    "objectID": "posts/ab-test/index.html#hypothesis-testing",
+    "href": "posts/ab-test/index.html#hypothesis-testing",
+    "title": "What an A/B Test Teaches Us About Frequentist Statistics",
+    "section": "Hypothesis Testing",
+    "text": "Hypothesis Testing\n\\[\nH_0: \\theta = 0\n\\]\n\nse &lt;- sqrt(var(A)/n + var(B)/n)\nz &lt;- theta_hat / se\n2 * (1 - pnorm(abs(z)))\n\n[1] 0.009343537\n\n\nA small p-value would provide evidence against the null hypothesis. In this example, the p-value is low enough to suggest that the difference in sign-up rates is unlikely to be explained by random chance alone.\nAlthough people often refer to this kind of comparison as a “t-test,” the logic here is closer to a large-sample z-test because the normal approximation comes from the Central Limit Theorem.\nThe T-Test as a Regression\n\\[\nY_i = \\beta_0 + \\beta_1 D_i + \\varepsilon_i\n\\]\n\nY &lt;- c(A, B)\nD &lt;- c(rep(1, n), rep(0, n))\nsummary(lm(Y ~ D))\n\n\nCall:\nlm(formula = Y ~ D)\n\nResiduals:\n   Min     1Q Median     3Q    Max \n-0.218 -0.218 -0.172 -0.172  0.828 \n\nCoefficients:\n            Estimate Std. Error t value Pr(&gt;|t|)    \n(Intercept)  0.17200    0.01251  13.745  &lt; 2e-16 ***\nD            0.04600    0.01770   2.599  0.00941 ** \n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\nResidual standard error: 0.3957 on 1998 degrees of freedom\nMultiple R-squared:  0.00337,   Adjusted R-squared:  0.002871 \nF-statistic: 6.756 on 1 and 1998 DF,  p-value: 0.009412\n\n\nIn this setup, the coefficient on \\(D_i\\) is exactly the difference in means between the two groups. This equivalence is useful because regression provides a flexible framework for extending simple A/B tests to more complicated settings with additional covariates or interactions."
+  },
+  {
+    "objectID": "posts/ab-test/index.html#the-t-test-as-a-regression",
+    "href": "posts/ab-test/index.html#the-t-test-as-a-regression",
+    "title": "A/B Testing a Call to Action",
+    "section": "The T-Test as a Regression",
+    "text": "The T-Test as a Regression\n\n\n\n\n\n\nNote\n\n\n\n\nIt turns out that the two-sample test we just ran is mathematically equivalent to a simple linear regression. Understanding this connection is useful because it means the same machinery — and the same software — that you use for regression can also perform hypothesis tests, and it generalizes naturally to more complex experimental designs.\nExplain the setup to the reader. Stack the CTA A and CTA B data into a single dataset with two columns: an outcome \\(Y_i\\) (1 if the visitor signed up, 0 otherwise) and an indicator \\(D_i\\) (1 if the visitor saw CTA A, 0 if they saw CTA B). Then fit the regression:\n\n\\[\nY_i = \\beta_0 + \\beta_1 D_i + \\varepsilon_i\n\\]\n\nWalk through the interpretation of the coefficients:\n\n\\(\\beta_0\\) is the expected value of \\(Y_i\\) when \\(D_i = 0\\) — i.e., the mean of the B group, which estimates \\(\\pi_B\\).\n\\(\\beta_0 + \\beta_1\\) is the expected value of \\(Y_i\\) when \\(D_i = 1\\) — i.e., the mean of the A group, which estimates \\(\\pi_A\\).\nTherefore \\(\\beta_1 = \\pi_A - \\pi_B = \\theta\\), and the OLS estimate \\(\\hat\\beta_1\\) is numerically identical to \\(\\hat\\theta = \\bar{X}_A - \\bar{X}_B\\).\n\nFit this regression using your simulated data. Report the coefficient estimate \\(\\hat\\beta_1\\), its standard error, its t-statistic, and its p-value. Compare these to the values you computed in the previous section using the two-sample approach — they should match (up to a small difference in how the standard error is computed; standard OLS assumes a single pooled variance, while the two-sample formula we used assumes separate variances for each group).\nExplain to the reader why this equivalence matters: the regression framework makes it easy to add controls, interactions, or additional treatment arms, all while producing the same inference in the simple case."
+  },
+  {
+    "objectID": "posts/ab-test/index.html#the-problem-with-peeking",
+    "href": "posts/ab-test/index.html#the-problem-with-peeking",
+    "title": "What an A/B Test Teaches Us About Frequentist Statistics",
+    "section": "The Problem with Peeking",
+    "text": "The Problem with Peeking\n\nfalse_positive &lt;- replicate(1000, {\n  A &lt;- rbinom(1000, 1, 0.2)\n  B &lt;- rbinom(1000, 1, 0.2)\n\n  any(sapply(seq(100, 1000, 100), function(k) {\n    z &lt;- (mean(A[1:k]) - mean(B[1:k])) /\n         sqrt(var(A[1:k])/k + var(B[1:k])/k)\n    p &lt;- 2 * (1 - pnorm(abs(z)))\n    p &lt; 0.05\n  }))\n})\n\nmean(false_positive)\n\n[1] 0.219\n\n\nThis value estimates the probability of seeing at least one “significant” result when there is actually no true effect. Because the test is repeated many times, the overall false positive rate becomes much larger than 0.05. This is why experimenters should avoid repeatedly checking results without adjustment."
+  },
+  {
+    "objectID": "posts/ab-test/index.html#conclusion",
+    "href": "posts/ab-test/index.html#conclusion",
+    "title": "What an A/B Test Teaches Us About Frequentist Statistics",
+    "section": "Conclusion",
+    "text": "Conclusion\nThis A/B testing example shows how classical frequentist tools are used in practice. The difference in sample means gives a natural estimator, the Law of Large Numbers explains why estimates stabilize, the bootstrap helps quantify uncertainty, the Central Limit Theorem supports large-sample inference, and hypothesis testing provides a formal way to assess evidence.\nAt the same time, the peeking example highlights an important practical lesson: good statistical conclusions depend not only on the method used, but also on disciplined experimental design."
+  }
+]
