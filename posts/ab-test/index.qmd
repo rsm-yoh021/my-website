@@ -13,7 +13,7 @@ execute:
 
 Small changes in wording can meaningfully affect user behavior. Suppose I run a website with a newsletter sign-up form on the homepage. I want to test whether one call-to-action (CTA) message leads to more users subscribing than another.
 
-To answer this question, I run an A/B test. Visitors are randomly assigned to one of two versions of the CTA, and I compare the proportion of users who sign up in each group.
+To answer this question, I run an A/B test. Visitors are randomly assigned to one of two versions of the CTA, and I compare the proportion of users who sign up in each group. This setup allows us to estimate the causal effect of changing the CTA wording on user behavior.
 
 In this post, I use simulation to connect this simple experiment to key ideas in classical frequentist statistics: estimation, the law of large numbers, bootstrap uncertainty, the central limit theorem, hypothesis testing, regression, and the dangers of repeatedly checking results.
 
@@ -52,6 +52,7 @@ B <- rbinom(n, 1, 0.18)
 
 theta_hat <- mean(A) - mean(B)
 theta_hat
+hist(A, main = "Distribution of Sign-ups (A)", xlab = "Signup (0/1)")
 ``` 
 The simulated estimate is close to the true difference, but not exactly equal to it. That gap is the natural sampling variation that frequentist methods are designed to quantify.
 
@@ -135,7 +136,7 @@ summary(lm(Y ~ D))
 In this setup, the coefficient on $D_i$ is exactly the difference in means between the two groups. This equivalence is useful because regression provides a flexible framework for extending simple A/B tests to more complicated settings with additional covariates or interactions.
 
 
-## The Problem with Peeking
+## The Problem with Repeated Testing (Peeking)
 ```{r}
 false_positive <- replicate(1000, {
   A <- rbinom(1000, 1, 0.2)
@@ -157,4 +158,4 @@ This value estimates the probability of seeing at least one "significant" result
 
 This A/B testing example shows how classical frequentist tools are used in practice. The difference in sample means gives a natural estimator, the Law of Large Numbers explains why estimates stabilize, the bootstrap helps quantify uncertainty, the Central Limit Theorem supports large-sample inference, and hypothesis testing provides a formal way to assess evidence.
 
-At the same time, the peeking example highlights an important practical lesson: good statistical conclusions depend not only on the method used, but also on disciplined experimental design.
+At the same time, the peeking example highlights an important practical lesson: good statistical conclusions depend not only on the method used, but also on disciplined experimental design. In practice, these tools help organizations make data-driven decisions, but only when experiments are carefully designed and interpreted.
